@@ -7,6 +7,7 @@ import { todayYm } from '../lib/dates';
 export const useFinanceStore = defineStore('finance', () => {
   const assets = ref([]);
   const moves = ref([]);
+  const items = ref([]);
   const invoices = ref([]);
   const bills = ref([]);
   const debts = ref([]);
@@ -26,9 +27,9 @@ export const useFinanceStore = defineStore('finance', () => {
 
   async function loadAll() {
     try {
-      const [assetsRes, movesRes, invoicesRes, billsRes, pensionRes, pensionPeriodsRes, affiliationsRes, cesantiasRes,
+      const [assetsRes, movesRes, itemsRes, invoicesRes, billsRes, pensionRes, pensionPeriodsRes, affiliationsRes, cesantiasRes,
         debtsRes, goalsRes, insurancesRes, checkupsRes, budgetRows, trmRow, taxRow, scoreRow] = await Promise.all([
-        apiGet('assets'), apiGet('moves'), apiGet('invoices'), apiGet('bills'),
+        apiGet('assets'), apiGet('moves'), apiGet('items'), apiGet('invoices'), apiGet('bills'),
         apiGet('pension'), apiGet('pension-periods'), apiGet('affiliations'), apiGet('cesantias'),
         apiGet('debts'), apiGet('goals'), apiGet('insurances'), apiGet('checkups'), apiGet('budgets'),
         apiGet('settings/trm'), apiGet('settings/tax_declaration_fecha'), apiGet('settings/credit_score'),
@@ -36,6 +37,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
       assets.value = assetsRes;
       moves.value = movesRes;
+      items.value = itemsRes;
       invoices.value = invoicesRes;
       bills.value = billsRes.map(fromApiBill);
       pension.value = fromApiPension(pensionRes);
@@ -89,14 +91,33 @@ export const useFinanceStore = defineStore('finance', () => {
     delete budgets.value[categoria];
   }
 
-  // ----- Facturas (items anidados) -----
+  // ----- Catálogo de productos -----
+  // Nunca se actualiza un item existente: un precio nuevo siempre crea una
+  // fila nueva, para conservar el histórico de precios por producto.
+  async function addItem(item) {
+    const saved = await apiPost('items', { id: uid(), ...item });
+    items.value.push(saved);
+    return saved;
+  }
+
+  // Parcha localmente la deuda que una factura (al crearse o borrarse) haya
+  // afectado, sin necesidad de recargar todo `debts`.
+  function patchDebt(debt) {
+    if (!debt) return;
+    const idx = debts.value.findIndex((d) => d.id === debt.id);
+    if (idx !== -1) debts.value[idx] = debt;
+  }
+
+  // ----- Facturas (compuestas de productos del catálogo) -----
   async function addInvoice(invoice) {
     const saved = await apiPost('invoices', { id: uid(), ...invoice });
     invoices.value.push(saved);
+    patchDebt(saved.debt);
   }
   async function removeInvoice(id) {
-    await apiDelete(`invoices/${id}`);
+    const result = await apiDelete(`invoices/${id}`);
     invoices.value = invoices.value.filter((i) => i.id !== id);
+    patchDebt(result && result.debt);
   }
 
   // ----- Tarjetas / servicios -----
@@ -207,12 +228,13 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   return {
-    assets, moves, invoices, bills, debts, goals, insurances, checkups, affiliations, cesantias,
+    assets, moves, items, invoices, bills, debts, goals, insurances, checkups, affiliations, cesantias,
     pensionPeriods, budgets, pension, trm, taxDeclaration, creditScore, loaded, loadError,
     loadAll,
     addAsset, removeAsset,
     addMove, removeMove,
     setBudget, removeBudget,
+    addItem,
     addInvoice, removeInvoice,
     addBill, payBill, removeBill,
     addDebt, removeDebt,

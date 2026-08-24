@@ -18,6 +18,10 @@ export async function apiPut(path, body) {
 export async function apiDelete(path) {
   const r = await fetch(`${API}/${path}`, { method: 'DELETE' });
   if (!r.ok && r.status !== 404) throw new Error(`DELETE ${path} -> ${r.status}`);
+  // La mayoría de DELETE responden 204 sin cuerpo; "invoices" responde 200
+  // con la deuda actualizada (si la factura estaba ligada a una tarjeta).
+  if (r.status === 204) return null;
+  try { return await r.json(); } catch { return null; }
 }
 
 // La mayoría de tablas usan las mismas columnas que el estado del frontend, así
