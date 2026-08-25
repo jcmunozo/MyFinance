@@ -2,74 +2,16 @@
 import { ref, computed } from 'vue';
 import { useFinanceStore } from '../stores/finance';
 import { fmtCOP } from '../lib/format';
+import InvoiceModal from './InvoiceModal.vue';
 import ItemPickerModal from './ItemPickerModal.vue';
 
 const store = useFinanceStore();
 
-const fecha = ref('');
-const tienda = ref('');
-const marca = ref('');
-const pais = ref('Colombia');
-const depto = ref('');
-const ciudad = ref('');
-const pago = ref('Efectivo');
-const debtId = ref('');
-
-const tarjetas = computed(() => store.debts.filter((d) => d.tipo === 'tarjeta'));
-
-// Líneas de la factura en construcción: cada una referencia un producto del
-// catálogo (item_id) más la cantidad comprada. El precio/nombre/marca se
-// muestran desde el item elegido, pero no se guardan sueltos — al enviar la
-// factura solo viaja {item_id, cantidad}.
-const draftItems = ref([]);
-const total = computed(() => draftItems.value.reduce((s, d) => s + Number(d.valor || 0) * Number(d.cantidad || 1), 0));
-
-const pickerVisible = ref(false);
-const pickerContext = ref('invoice'); // 'invoice' | 'standalone'
-const pickerStartMode = ref('search');
-
-function openPickerForInvoice() {
-  pickerContext.value = 'invoice';
-  pickerStartMode.value = 'search';
-  pickerVisible.value = true;
-}
-function openPickerStandalone() {
-  pickerContext.value = 'standalone';
-  pickerStartMode.value = 'create';
-  pickerVisible.value = true;
-}
-function onPicked({ item, cantidad }) {
-  if (pickerContext.value === 'invoice') {
-    draftItems.value.push({
-      item_id: item.id, cantidad, nombre: item.nombre, marca: item.marca, peso: item.peso, valor: item.valor,
-    });
-  }
-  // en modo standalone el producto ya quedó guardado en el catálogo (store.addItem
-  // corrió dentro del modal); no hay nada más que hacer aquí.
-}
-function removeDraftItem(i) { draftItems.value.splice(i, 1); }
-
-async function saveInvoice() {
-  if (!fecha.value || !tienda.value.trim() || !draftItems.value.length) {
-    alert('Completa la fecha, la tienda y agrega al menos un producto.');
-    return;
-  }
-  if (pago.value === 'Tarjeta crédito' && !debtId.value) {
-    alert('Elige con cuál tarjeta pagaste (o cambia la forma de pago).');
-    return;
-  }
-  try {
-    await store.addInvoice({
-      fecha: fecha.value, tienda: tienda.value.trim(), marca: marca.value.trim(), pais: pais.value.trim(),
-      depto: depto.value.trim(), ciudad: ciudad.value.trim(), pago: pago.value,
-      debt_id: pago.value === 'Tarjeta crédito' ? debtId.value : null,
-      total: total.value,
-      items: draftItems.value.map((d) => ({ item_id: d.item_id, cantidad: d.cantidad })),
-    });
-  } catch (e) { alert('No se pudo guardar la factura.'); return; }
-  fecha.value = ''; tienda.value = ''; marca.value = ''; depto.value = ''; ciudad.value = '';
-  pago.value = 'Efectivo'; debtId.value = '';
-  draftItems.value = [];
+const invoiceModalVisible = ref(false);
+const productModalVisible = ref(false);
+function onProductPicked() {
+  // Modo standalone: el producto ya quedó guardado en el catálogo dentro del
+  // modal (store.addItem corrió ahí); aquí no hay nada más que hacer.
 }
 
 const query = ref('');
@@ -96,55 +38,13 @@ const sortedInvoices = computed(() => store.invoices.slice().sort((a, b) => (b.f
 
 <template>
   <div class="mf-tab-panel">
-  <div class="mf-section-title">Registrar factura</div>
-  <div class="mf-form" style="grid-template-columns:repeat(auto-fit,minmax(158px,1fr));">
-    <label>Fecha<input v-model="fecha" type="date" /></label>
-    <label>Tienda<input v-model="tienda" placeholder="Éxito Calle 80" /></label>
-    <label>Marca / cadena<input v-model="marca" placeholder="Éxito, D1, Jumbo..." /></label>
-    <label>País<input v-model="pais" placeholder="Colombia" /></label>
-    <label>Departamento<input v-model="depto" placeholder="Cundinamarca" /></label>
-    <label>Ciudad<input v-model="ciudad" placeholder="Bogotá" /></label>
-    <label>Forma de pago
-      <select v-model="pago">
-        <option>Efectivo</option>
-        <option>Tarjeta débito</option>
-        <option>Tarjeta crédito</option>
-        <option>Nequi / Daviplata</option>
-        <option>Transferencia</option>
-      </select>
-    </label>
-    <label v-if="pago === 'Tarjeta crédito'">¿Cuál tarjeta?
-      <select v-model="debtId">
-        <option value="" disabled>Elige una tarjeta</option>
-        <option v-for="d in tarjetas" :key="d.id" :value="d.id">{{ d.entidad }}</option>
-      </select>
-    </label>
-  </div>
-  <p v-if="pago === 'Tarjeta crédito' && !tarjetas.length" class="mf-note">No tienes tarjetas registradas en la pestaña Deudas — regístrala ahí primero para poder ligar esta factura.</p>
-
-  <div class="mf-note" style="margin-bottom:6px">Productos de la factura</div>
-  <div v-if="!draftItems.length" class="mf-empty">Aún no has agregado productos.</div>
-  <div v-else class="mf-items-list">
-    <div v-for="(d, i) in draftItems" :key="i" class="mf-item-row" style="grid-template-columns:2fr 1fr 1fr auto;">
-      <div>{{ d.nombre }}<span v-if="d.marca" class="mf-note"> · {{ d.marca }}</span></div>
-      <div class="mf-num">{{ fmtCOP(d.valor) }} c/u</div>
-      <div class="mf-num">× {{ d.cantidad }} = {{ fmtCOP(d.valor * d.cantidad) }}</div>
-      <button class="mf-del" @click="removeDraftItem(i)">Quitar</button>
-    </div>
-  </div>
-  <div class="mf-form-actions" style="margin-bottom:6px">
-    <button class="mf-btn secondary" @click="openPickerForInvoice">+ Agregar producto</button>
-  </div>
-  <p v-if="draftItems.length" class="mf-note" style="text-align:right;margin-bottom:10px">Total: <strong>{{ fmtCOP(total) }}</strong></p>
-  <div class="mf-form-actions" style="margin-bottom:14px">
-    <button class="mf-btn" @click="saveInvoice">Guardar factura</button>
+  <div class="mf-form-actions" style="justify-content:flex-start;margin-bottom:20px">
+    <button class="mf-btn" @click="invoiceModalVisible = true">+ Agregar factura</button>
+    <button class="mf-btn" @click="productModalVisible = true">+ Agregar producto</button>
   </div>
 
   <div class="mf-section-title">Comparador de precios</div>
   <input v-model="query" class="mf-search" placeholder="Busca un producto para ver dónde sale más barato, ej: arroz" />
-  <div class="mf-form-actions" style="margin:8px 0">
-    <button class="mf-btn secondary" @click="openPickerStandalone">+ Anotar precio de referencia (sin factura)</button>
-  </div>
   <p v-if="!priceMatches.length" class="mf-empty">{{ query.trim() ? 'No hay coincidencias en tu catálogo.' : 'Escribe un producto para comparar precios entre tus compras y referencias.' }}</p>
   <table v-else class="mf-table">
     <thead><tr><th>Producto</th><th>Marca</th><th>Tienda</th><th>Fecha</th><th style="text-align:right">Valor</th></tr></thead>
@@ -186,6 +86,7 @@ const sortedInvoices = computed(() => store.invoices.slice().sort((a, b) => (b.f
     </div>
   </div>
 
-  <ItemPickerModal :visible="pickerVisible" :start-mode="pickerStartMode" @close="pickerVisible = false" @picked="onPicked" />
+  <InvoiceModal :visible="invoiceModalVisible" @close="invoiceModalVisible = false" />
+  <ItemPickerModal :visible="productModalVisible" start-mode="create" @close="productModalVisible = false" @picked="onProductPicked" />
   </div>
 </template>

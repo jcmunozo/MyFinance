@@ -2,7 +2,7 @@ export const TABS = [
   { id: 'resumen', label: 'Resumen', icon: 'home', subtitle: 'Tu patrimonio, alertas y gasto del mes de un vistazo' },
   { id: 'activos', label: 'Activos', icon: 'wallet', subtitle: 'Cuentas de ahorro, CDT, inversiones y puntos' },
   { id: 'movimientos', label: 'Movimientos', icon: 'swap', subtitle: 'Ingresos, gastos y presupuesto por categoría' },
-  { id: 'facturas', label: 'Facturas', icon: 'receipt', subtitle: 'Registra facturas y compara precios entre tiendas' },
+  { id: 'facturas', label: 'Compras', icon: 'receipt', subtitle: 'Agrega facturas y productos, y compara precios entre tiendas' },
   { id: 'pagos', label: 'Pagos y deudas', icon: 'card', subtitle: 'Tarjetas, servicios recurrentes, deudas y vencimientos' },
   { id: 'pension', label: 'Protección social', icon: 'shield', subtitle: 'Pensión, cesantías, salud y chequeos preventivos' },
   { id: 'metas', label: 'Metas y seguros', icon: 'target', subtitle: 'Fondo de emergencia, metas de ahorro y pólizas' },

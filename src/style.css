@@ -331,6 +331,7 @@ table.mf-table tbody tr:hover{ background:var(--paper-2); }
   background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);
   box-shadow:var(--shadow-md);padding:18px 20px 20px;
 }
+.mf-modal.wide{ max-width:720px; }
 .mf-modal-head{
   display:flex;align-items:center;justify-content:space-between;
   font:700 16px var(--font-display);color:var(--ink);margin-bottom:12px;
