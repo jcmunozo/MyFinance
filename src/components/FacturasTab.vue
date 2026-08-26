@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useFinanceStore } from '../stores/finance';
-import { fmtCOP } from '../lib/format';
+import { fmtCOP, unitPrice } from '../lib/format';
 import InvoiceModal from './InvoiceModal.vue';
 import ItemPickerModal from './ItemPickerModal.vue';
 
@@ -18,9 +18,11 @@ const query = ref('');
 const priceMatches = computed(() => {
   const q = query.value.trim().toLowerCase();
   const matches = q ? store.items.filter((it) => it.nombre.toLowerCase().includes(q)) : store.items;
-  return matches.slice().sort((a, b) => Number(a.valor) - Number(b.valor)).slice(0, 20);
+  // Se ordena por precio unitario, no por precio de paquete: "3 jabones por
+  // 5200" (unidades=3) debe poder compararse contra un jabón suelto a 2000.
+  return matches.slice().sort((a, b) => unitPrice(a) - unitPrice(b)).slice(0, 20);
 });
-const minPrice = computed(() => (priceMatches.value.length ? Number(priceMatches.value[0].valor) : null));
+const minUnitPrice = computed(() => (priceMatches.value.length ? unitPrice(priceMatches.value[0]) : null));
 
 const openInvoice = ref(null);
 function toggleInvoice(id) { openInvoice.value = openInvoice.value === id ? null : id; }
@@ -47,14 +49,15 @@ const sortedInvoices = computed(() => store.invoices.slice().sort((a, b) => (b.f
   <input v-model="query" class="mf-search" placeholder="Busca un producto para ver dónde sale más barato, ej: arroz" />
   <p v-if="!priceMatches.length" class="mf-empty">{{ query.trim() ? 'No hay coincidencias en tu catálogo.' : 'Escribe un producto para comparar precios entre tus compras y referencias.' }}</p>
   <table v-else class="mf-table">
-    <thead><tr><th>Producto</th><th>Marca</th><th>Tienda</th><th>Fecha</th><th style="text-align:right">Valor</th></tr></thead>
+    <thead><tr><th>Producto</th><th>Marca</th><th>Tienda</th><th>Fecha</th><th style="text-align:right">Valor</th><th style="text-align:right">Por unidad</th></tr></thead>
     <tbody>
       <tr v-for="it in priceMatches" :key="it.id">
         <td>{{ it.nombre }}<span v-if="it.peso" class="mf-note"> ({{ it.peso }})</span></td>
         <td>{{ it.marca || '—' }}</td>
         <td>{{ it.tienda || '—' }}</td>
         <td>{{ it.fecha || '—' }}</td>
-        <td class="mf-num">{{ fmtCOP(it.valor) }} <span v-if="Number(it.valor) === minPrice" class="mf-badge cheap">más barato</span></td>
+        <td class="mf-num">{{ fmtCOP(it.valor) }}<span v-if="Number(it.unidades) > 1" class="mf-note"> (x{{ it.unidades }})</span></td>
+        <td class="mf-num">{{ fmtCOP(unitPrice(it)) }} <span v-if="unitPrice(it) === minUnitPrice" class="mf-badge cheap">más barato</span></td>
       </tr>
     </tbody>
   </table>
@@ -75,7 +78,7 @@ const sortedInvoices = computed(() => store.invoices.slice().sort((a, b) => (b.f
           <thead><tr><th>Producto</th><th>Cant.</th><th style="text-align:right">Valor</th></tr></thead>
           <tbody>
             <tr v-for="(it, i) in inv.items" :key="i">
-              <td>{{ it.nombre }}<span v-if="it.marca" class="mf-note"> · {{ it.marca }}</span></td>
+              <td>{{ it.nombre }}<span v-if="it.marca" class="mf-note"> · {{ it.marca }}</span><span v-if="Number(it.unidades) > 1" class="mf-note"> (paquete x{{ it.unidades }})</span></td>
               <td>{{ it.cantidad }}</td>
               <td class="mf-num">{{ fmtCOP(it.valor * it.cantidad) }}</td>
             </tr>

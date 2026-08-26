@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useFinanceStore } from '../stores/finance';
-import { fmtCOP } from '../lib/format';
+import { fmtCOP, unitPrice } from '../lib/format';
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -14,7 +14,7 @@ const store = useFinanceStore();
 const query = ref('');
 const mode = ref('search');
 const cantidades = ref({});
-const draft = ref({ nombre: '', marca: '', categoria: '', peso: '', valor: '', tienda: '', fecha: '' });
+const draft = ref({ nombre: '', marca: '', categoria: '', peso: '', valor: '', unidades: 1, tienda: '', fecha: '' });
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -25,7 +25,7 @@ watch(() => props.visible, (v) => {
   query.value = '';
   mode.value = props.startMode;
   cantidades.value = {};
-  draft.value = { nombre: '', marca: '', categoria: '', peso: '', valor: '', tienda: '', fecha: todayIso() };
+  draft.value = { nombre: '', marca: '', categoria: '', peso: '', valor: '', unidades: 1, tienda: '', fecha: todayIso() };
 });
 
 // Coincidencias del catálogo, la observación más reciente primero — así se ve
@@ -38,6 +38,7 @@ const matches = computed(() => {
     .slice()
     .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 });
+
 
 function cantidadFor(id) { return cantidades.value[id] || 1; }
 function setCantidad(id, v) { cantidades.value[id] = Math.max(1, Number(v) || 1); }
@@ -62,10 +63,11 @@ async function submitCreate() {
     categoria: draft.value.categoria.trim() || null,
     peso: draft.value.peso.trim() || null,
     valor: Number(draft.value.valor),
+    unidades: Math.max(1, Number(draft.value.unidades) || 1),
     tienda: draft.value.tienda.trim() || null,
     fecha: draft.value.fecha,
   });
-  draft.value = { nombre: '', marca: '', categoria: '', peso: '', valor: '', tienda: '', fecha: todayIso() };
+  draft.value = { nombre: '', marca: '', categoria: '', peso: '', valor: '', unidades: 1, tienda: '', fecha: todayIso() };
   mode.value = 'search';
   emit('picked', { item: saved, cantidad: 1 });
 }
@@ -87,7 +89,10 @@ async function submitCreate() {
           <div v-for="it in matches" :key="it.id" class="mf-item-match">
             <div class="mf-item-match-info">
               <div>{{ it.nombre }}<span v-if="it.marca"> · {{ it.marca }}</span><span v-if="it.peso" class="mf-note"> ({{ it.peso }})</span></div>
-              <div class="mf-note">{{ fmtCOP(it.valor) }} · {{ it.fecha || '—' }}<template v-if="it.tienda"> · {{ it.tienda }}</template></div>
+              <div class="mf-note">
+                {{ fmtCOP(it.valor) }}<template v-if="Number(it.unidades) > 1"> por paquete de {{ it.unidades }} ({{ fmtCOP(unitPrice(it)) }} c/u)</template>
+                · {{ it.fecha || '—' }}<template v-if="it.tienda"> · {{ it.tienda }}</template>
+              </div>
             </div>
             <input class="mf-item-match-qty" type="number" min="1" :value="cantidadFor(it.id)" @input="setCantidad(it.id, $event.target.value)" title="Cantidad" />
             <button class="mf-btn secondary" @click="pick(it)">Agregar</button>
@@ -104,10 +109,12 @@ async function submitCreate() {
           <label>Marca<input v-model="draft.marca" placeholder="Diana" /></label>
           <label>Categoría<input v-model="draft.categoria" placeholder="Abarrotes" /></label>
           <label>Peso / cant.<input v-model="draft.peso" placeholder="500g" /></label>
-          <label>Precio<input v-model="draft.valor" type="number" step="1" placeholder="3200" /></label>
+          <label>Precio del paquete<input v-model="draft.valor" type="number" step="1" placeholder="5200" /></label>
+          <label>Unidades en el paquete<input v-model="draft.unidades" type="number" min="1" step="1" placeholder="1" /></label>
           <label>Tienda<input v-model="draft.tienda" placeholder="Éxito Calle 80" /></label>
           <label>Fecha<input v-model="draft.fecha" type="date" /></label>
         </div>
+        <p v-if="Number(draft.valor) && Number(draft.unidades) > 1" class="mf-note">Eso da {{ fmtCOP(Number(draft.valor) / Number(draft.unidades)) }} por unidad.</p>
         <p class="mf-note">Esto crea un producto nuevo en el catálogo — nunca edita uno existente, así el precio anterior queda como referencia histórica.</p>
         <div class="mf-form-actions">
           <button class="mf-btn secondary" @click="mode = 'search'">Volver a buscar</button>

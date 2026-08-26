@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useFinanceStore } from '../stores/finance';
-import { fmtCOP } from '../lib/format';
+import { fmtCOP, unitPrice } from '../lib/format';
 import ItemPickerModal from './ItemPickerModal.vue';
 
 const props = defineProps({ visible: { type: Boolean, default: false } });
@@ -34,7 +34,7 @@ watch(() => props.visible, (v) => { if (v) resetForm(); });
 
 const pickerVisible = ref(false);
 function onPicked({ item, cantidad }) {
-  draftItems.value.push({ item_id: item.id, cantidad, nombre: item.nombre, marca: item.marca, peso: item.peso, valor: item.valor });
+  draftItems.value.push({ item_id: item.id, cantidad, nombre: item.nombre, marca: item.marca, peso: item.peso, valor: item.valor, unidades: item.unidades });
 }
 function removeDraftItem(i) { draftItems.value.splice(i, 1); }
 
@@ -98,7 +98,7 @@ async function saveInvoice() {
       <div v-else class="mf-items-list">
         <div v-for="(d, i) in draftItems" :key="i" class="mf-item-row">
           <div>{{ d.nombre }}<span v-if="d.marca" class="mf-note"> · {{ d.marca }}</span></div>
-          <div class="mf-num">{{ fmtCOP(d.valor) }} c/u</div>
+          <div class="mf-num">{{ fmtCOP(d.valor) }}<span v-if="Number(d.unidades) > 1" class="mf-note"> (paquete x{{ d.unidades }}, {{ fmtCOP(unitPrice(d)) }} c/u)</span></div>
           <div class="mf-num">× {{ d.cantidad }} = {{ fmtCOP(d.valor * d.cantidad) }}</div>
           <button class="mf-del" @click="removeDraftItem(i)">Quitar</button>
         </div>
