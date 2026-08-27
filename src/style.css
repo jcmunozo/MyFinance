@@ -176,21 +176,31 @@ body{
 }
 .mf-section-title:first-child{ margin-top:0; }
 
-/* ---------- Sub-tabs (pestañas dentro de una pestaña) ---------- */
-.mf-subtabs{ display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px; }
-.mf-subtab{
-  position:relative;
-  font:600 14.5px var(--font-body);cursor:pointer;
-  border:none;background:transparent;color:var(--ink-soft);
-  padding:11px 16px;
-  transition:color 140ms var(--ease);
+/* ---------- Sub-tabs estilo carpeta (pestañas dentro de una pestaña) ---------- */
+.mf-subtabs{
+  position:relative;z-index:2;
+  display:flex;align-items:flex-end;gap:4px;
+  margin-bottom:-1px;
 }
-.mf-subtab:hover{ color:var(--ink); }
-.mf-subtab.active{ color:var(--brand); }
-.mf-subtab.active::after{
-  content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;
-  border-radius:2px 2px 0 0;
-  background:linear-gradient(90deg,var(--brand),var(--teal));
+.mf-subtab{
+  position:relative;top:1px;
+  font:600 14px var(--font-body);cursor:pointer;
+  border:1px solid var(--line);border-bottom:none;
+  border-radius:10px 10px 0 0;
+  background:var(--paper-2);color:var(--ink-soft);
+  padding:10px 18px;
+  transition:background 140ms var(--ease),color 140ms var(--ease);
+}
+.mf-subtab:hover{ background:var(--paper);color:var(--ink); }
+.mf-subtab.active{
+  background:var(--paper);color:var(--ink);font-weight:700;
+  box-shadow:0 -2px 8px rgba(0,0,0,.04);
+}
+.mf-subtab-panel{
+  position:relative;z-index:1;
+  border:1px solid var(--line);border-radius:0 var(--r-md) var(--r-md) var(--r-md);
+  background:var(--paper);box-shadow:var(--shadow-xs);
+  padding:20px;
 }
 
 /* ---------- Tables ---------- */

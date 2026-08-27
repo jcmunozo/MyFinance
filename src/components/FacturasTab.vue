@@ -52,51 +52,53 @@ const sortedInvoices = computed(() => store.invoices.slice().sort((a, b) => (b.f
     <button type="button" class="mf-subtab" :class="{ active: subTab === 'facturas' }" role="tab" :aria-selected="subTab === 'facturas'" @click="subTab = 'facturas'">Facturas guardadas</button>
   </div>
 
-  <template v-if="subTab === 'comparador'">
-    <input v-model="query" class="mf-search" placeholder="Busca un producto para ver dónde sale más barato, ej: arroz" />
-    <p v-if="!priceMatches.length" class="mf-empty">{{ query.trim() ? 'No hay coincidencias en tu catálogo.' : 'Escribe un producto para comparar precios entre tus compras y referencias.' }}</p>
-    <table v-else class="mf-table">
-      <thead><tr><th>Producto</th><th>Marca</th><th>Tienda</th><th>Fecha</th><th style="text-align:right">Valor</th><th style="text-align:right">Por unidad</th></tr></thead>
-      <tbody>
-        <tr v-for="it in priceMatches" :key="it.id">
-          <td>{{ it.nombre }}<span v-if="it.peso" class="mf-note"> ({{ it.peso }})</span></td>
-          <td>{{ it.marca || '—' }}</td>
-          <td>{{ it.tienda || '—' }}</td>
-          <td>{{ it.fecha || '—' }}</td>
-          <td class="mf-num">{{ fmtCOP(it.valor) }}<span v-if="Number(it.unidades) > 1" class="mf-note"> (x{{ it.unidades }})</span></td>
-          <td class="mf-num">{{ fmtCOP(unitPrice(it)) }} <span v-if="unitPrice(it) === minUnitPrice" class="mf-badge cheap">más barato</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </template>
+  <div class="mf-subtab-panel">
+    <template v-if="subTab === 'comparador'">
+      <input v-model="query" class="mf-search" placeholder="Busca un producto para ver dónde sale más barato, ej: arroz" />
+      <p v-if="!priceMatches.length" class="mf-empty">{{ query.trim() ? 'No hay coincidencias en tu catálogo.' : 'Escribe un producto para comparar precios entre tus compras y referencias.' }}</p>
+      <table v-else class="mf-table">
+        <thead><tr><th>Producto</th><th>Marca</th><th>Tienda</th><th>Fecha</th><th style="text-align:right">Valor</th><th style="text-align:right">Por unidad</th></tr></thead>
+        <tbody>
+          <tr v-for="it in priceMatches" :key="it.id">
+            <td>{{ it.nombre }}<span v-if="it.peso" class="mf-note"> ({{ it.peso }})</span></td>
+            <td>{{ it.marca || '—' }}</td>
+            <td>{{ it.tienda || '—' }}</td>
+            <td>{{ it.fecha || '—' }}</td>
+            <td class="mf-num">{{ fmtCOP(it.valor) }}<span v-if="Number(it.unidades) > 1" class="mf-note"> (x{{ it.unidades }})</span></td>
+            <td class="mf-num">{{ fmtCOP(unitPrice(it)) }} <span v-if="unitPrice(it) === minUnitPrice" class="mf-badge cheap">más barato</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </template>
 
-  <template v-else>
-    <p v-if="!store.invoices.length" class="mf-empty">Aún no has guardado facturas.</p>
-    <div v-else>
-      <div v-for="inv in sortedInvoices" :key="inv.id" class="mf-invoice-card">
-        <div class="mf-invoice-head" @click="toggleInvoice(inv.id)">
-          <span>{{ inv.fecha || '—' }} · {{ inv.tienda }}<template v-if="inv.marca"> ({{ inv.marca }})</template></span>
-          <span class="mf-num">{{ fmtCOP(inv.total) }}</span>
-        </div>
-        <div class="mf-invoice-body" :class="{ open: openInvoice === inv.id }">
-          <p class="mf-note">
-            {{ [inv.ciudad, inv.depto, inv.pais].filter(Boolean).join(', ') }} · Pago: {{ inv.pago || '—' }}<template v-if="inv.debt_id"> ({{ debtLabel(inv.debt_id) }})</template>
-          </p>
-          <table class="mf-table">
-            <thead><tr><th>Producto</th><th>Cant.</th><th style="text-align:right">Valor</th></tr></thead>
-            <tbody>
-              <tr v-for="(it, i) in inv.items" :key="i">
-                <td>{{ it.nombre }}<span v-if="it.marca" class="mf-note"> · {{ it.marca }}</span><span v-if="Number(it.unidades) > 1" class="mf-note"> (paquete x{{ it.unidades }})</span></td>
-                <td>{{ it.cantidad }}</td>
-                <td class="mf-num">{{ fmtCOP(it.valor * it.cantidad) }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="mf-form-actions" style="margin-top:8px"><button class="mf-del" @click.stop="removeInvoice(inv.id)">Eliminar factura</button></div>
+    <template v-else>
+      <p v-if="!store.invoices.length" class="mf-empty">Aún no has guardado facturas.</p>
+      <div v-else>
+        <div v-for="inv in sortedInvoices" :key="inv.id" class="mf-invoice-card">
+          <div class="mf-invoice-head" @click="toggleInvoice(inv.id)">
+            <span>{{ inv.fecha || '—' }} · {{ inv.tienda }}<template v-if="inv.marca"> ({{ inv.marca }})</template></span>
+            <span class="mf-num">{{ fmtCOP(inv.total) }}</span>
+          </div>
+          <div class="mf-invoice-body" :class="{ open: openInvoice === inv.id }">
+            <p class="mf-note">
+              {{ [inv.ciudad, inv.depto, inv.pais].filter(Boolean).join(', ') }} · Pago: {{ inv.pago || '—' }}<template v-if="inv.debt_id"> ({{ debtLabel(inv.debt_id) }})</template>
+            </p>
+            <table class="mf-table">
+              <thead><tr><th>Producto</th><th>Cant.</th><th style="text-align:right">Valor</th></tr></thead>
+              <tbody>
+                <tr v-for="(it, i) in inv.items" :key="i">
+                  <td>{{ it.nombre }}<span v-if="it.marca" class="mf-note"> · {{ it.marca }}</span><span v-if="Number(it.unidades) > 1" class="mf-note"> (paquete x{{ it.unidades }})</span></td>
+                  <td>{{ it.cantidad }}</td>
+                  <td class="mf-num">{{ fmtCOP(it.valor * it.cantidad) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="mf-form-actions" style="margin-top:8px"><button class="mf-del" @click.stop="removeInvoice(inv.id)">Eliminar factura</button></div>
+          </div>
         </div>
       </div>
-    </div>
-  </template>
+    </template>
+  </div>
 
   <InvoiceModal :visible="invoiceModalVisible" @close="invoiceModalVisible = false" />
   <ItemPickerModal :visible="productModalVisible" start-mode="create" @close="productModalVisible = false" @picked="onProductPicked" />
