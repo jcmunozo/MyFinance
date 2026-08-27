@@ -176,6 +176,23 @@ body{
 }
 .mf-section-title:first-child{ margin-top:0; }
 
+/* ---------- Sub-tabs (pestañas dentro de una pestaña) ---------- */
+.mf-subtabs{ display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px; }
+.mf-subtab{
+  position:relative;
+  font:600 14.5px var(--font-body);cursor:pointer;
+  border:none;background:transparent;color:var(--ink-soft);
+  padding:11px 16px;
+  transition:color 140ms var(--ease);
+}
+.mf-subtab:hover{ color:var(--ink); }
+.mf-subtab.active{ color:var(--brand); }
+.mf-subtab.active::after{
+  content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;
+  border-radius:2px 2px 0 0;
+  background:linear-gradient(90deg,var(--brand),var(--teal));
+}
+
 /* ---------- Tables ---------- */
 table.mf-table{ width:100%;border-collapse:separate;border-spacing:0;font-size:15px; }
 table.mf-table th{
