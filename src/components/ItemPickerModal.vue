@@ -14,7 +14,7 @@ const store = useFinanceStore();
 const query = ref('');
 const mode = ref('search');
 const cantidades = ref({});
-const draft = ref({ nombre: '', marca: '', categoria: '', peso: '', valor: '', unidades: 1, tienda: '', fecha: '' });
+const draft = ref({ nombre: '', marca: '', categoria: '', pesoValor: '', pesoUnidad: 'gr', valor: '', unidades: 1, tienda: '', fecha: '' });
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -25,7 +25,7 @@ watch(() => props.visible, (v) => {
   query.value = '';
   mode.value = props.startMode;
   cantidades.value = {};
-  draft.value = { nombre: '', marca: '', categoria: '', peso: '', valor: '', unidades: 1, tienda: '', fecha: todayIso() };
+  draft.value = { nombre: '', marca: '', categoria: '', pesoValor: '', pesoUnidad: 'gr', valor: '', unidades: 1, tienda: '', fecha: todayIso() };
 });
 
 // Coincidencias del catálogo, la observación más reciente primero — así se ve
@@ -61,7 +61,7 @@ async function submitCreate() {
     nombre: draft.value.nombre.trim(),
     marca: draft.value.marca.trim() || null,
     categoria: draft.value.categoria.trim() || null,
-    peso: draft.value.peso.trim() || null,
+    peso: draft.value.pesoValor.trim() ? `${draft.value.pesoValor.trim()} ${draft.value.pesoUnidad}` : null,
     valor: Number(draft.value.valor),
     unidades: Math.max(1, Number(draft.value.unidades) || 1),
     tienda: draft.value.tienda.trim() || null,
@@ -108,7 +108,16 @@ async function submitCreate() {
           <label>Nombre<input v-model="draft.nombre" placeholder="Arroz Diana" /></label>
           <label>Marca<input v-model="draft.marca" placeholder="Diana" /></label>
           <label>Categoría<input v-model="draft.categoria" placeholder="Abarrotes" /></label>
-          <label>Peso / cant.<input v-model="draft.peso" placeholder="500g" /></label>
+          <label>Peso / cant.
+            <div class="mf-peso-group">
+              <input v-model="draft.pesoValor" type="number" step="any" placeholder="500" />
+              <select v-model="draft.pesoUnidad">
+                <option value="gr">gr</option>
+                <option value="cm3">cm3</option>
+                <option value="l">l</option>
+              </select>
+            </div>
+          </label>
           <label>Precio del paquete<input v-model="draft.valor" type="number" step="1" placeholder="5200" /></label>
           <label>Unidades en el paquete<input v-model="draft.unidades" type="number" min="1" step="1" placeholder="1" /></label>
           <label>Tienda<input v-model="draft.tienda" placeholder="Éxito Calle 80" /></label>

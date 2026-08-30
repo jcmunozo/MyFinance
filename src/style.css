@@ -243,6 +243,11 @@ table.mf-table tbody tr:hover{ background:var(--paper-2); }
 .mf-form select option{ background:var(--paper); color:var(--ink); }
 .mf-form-actions{ grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px; }
 
+/* Input numérico + dropdown de unidad, uno junto al otro dentro de una celda del form. */
+.mf-peso-group{ display:flex;gap:6px; }
+.mf-peso-group input{ flex:1 1 auto;min-width:0; }
+.mf-peso-group select{ flex:0 0 68px; }
+
 .mf-btn{
   font:600 14.5px var(--font-body);cursor:pointer;
   border:1px solid var(--brand);background:linear-gradient(180deg,var(--brand),var(--brand-deep));
